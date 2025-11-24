@@ -1,0 +1,31 @@
+{
+  "processed_files": [
+    {
+      "pdf_file": "documents\\attention_is_all_you_need.pdf",
+      "pdf_name": "attention_is_all_you_need.pdf",
+      "markdown_file": "rag_data\\processed\\attention_is_all_you_need.md",
+      "success": true,
+      "processed_at": "2025-11-24T15:36:41.379094",
+      "file_size_bytes": 2215244
+    },
+    {
+      "pdf_file": "documents\\The Essence of Software Engineering, Volker Gruhn, Rudiger Striemer.pdf",
+      "pdf_name": "The Essence of Software Engineering, Volker Gruhn, Rudiger Striemer.pdf",
+      "markdown_file": "rag_data\\processed\\The Essence of Software Engineering, Volker Gruhn, Rudiger Striemer.md",
+      "success": true,
+      "processed_at": "2025-11-24T15:38:53.423677",
+      "file_size_bytes": 2703924
+    },
+    {
+      "pdf_file": "documents\\thinkpython2.pdf",
+      "pdf_name": "thinkpython2.pdf",
+      "markdown_file": "rag_data\\processed\\thinkpython2.md",
+      "success": true,
+      "processed_at": "2025-11-24T15:40:06.465982",
+      "file_size_bytes": 921415
+    }
+  ],
+  "last_updated": "2025-11-24T15:40:06.466159",
+  "total_processed": 3,
+  "successful": 3
+}
