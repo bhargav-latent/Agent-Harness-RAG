@@ -112,47 +112,97 @@ Rather than guessing which RAG approach is better, we **measure and compare** us
 ```
 Agent-Harness-RAG/
 ├── README.md                      # This file
-├── CLAUDE.md                      # AI assistant guide
-├── AGENT_HARNESS.md              # FileSearch RAG architecture
-├── VECTOR_STORE_RAG.md           # Vector Store RAG architecture
-├── .env.example                   # Environment configuration template
-├── documents/                     # Document corpus
-│   ├── attention_is_all_you_need.pdf
-│   ├── thinkpython2.pdf
-│   └── The Essence of Software Engineering...pdf
-└── evaluation/                    # Evaluation framework
-    └── framework.md              # Categories and metrics
+├── CLAUDE.md                      # AI assistant guide (Deep Agents documentation)
+├── DEPLOYMENT.md                  # Deployment guide
+├── WSL_DEPLOYMENT.md              # WSL/Linux deployment guide
+├── WINDOWS_PATH_BUG.md            # Windows bug documentation & workarounds
+├── FILESYSTEM_BACKEND_FIX.md      # FilesystemBackend configuration guide
+├── .env                           # Environment configuration
+├── requirements.txt               # Python dependencies
+├── langgraph.json                 # LangGraph deployment config
+├── agents/
+│   └── filesearch_agent.py        # FileSearch RAG agent (Deep Agents)
+├── src/
+│   ├── filesearch_rag.py          # FileSearch RAG class
+│   └── README.md                  # Source code documentation
+├── rag_data/
+│   └── processed/                 # Preprocessed markdown documents
+│       ├── attention_is_all_you_need.md
+│       ├── thinkpython2.md
+│       └── The Essence of Software Engineering...md
+├── evaluation/
+│   ├── framework.md               # Evaluation framework
+│   ├── dataset_schema.md          # Question dataset schema
+│   └── datasets/
+│       └── evaluation_set.jsonl   # 50 test questions
+└── documents/                     # Original PDF documents
+    ├── attention_is_all_you_need.pdf
+    ├── thinkpython2.pdf
+    └── The Essence of Software Engineering...pdf
 ```
 
 ---
 
 ## Quick Start
 
-### 1. Setup Environment
+### 1. Install Dependencies
 
 ```bash
-# Copy environment template
-cp .env.example .env
-
-# Edit .env with your endpoints
-# LLM_BASE_URL=http://10.26.1.56:8708/v1
-# EMBEDDINGS_BASE_URL=http://10.26.1.56:8786/v1/embeddings
+# Install Python dependencies
+pip install -r requirements.txt
 ```
 
-### 2. Read the Documentation
+### 2. Configure Environment
 
-- **FileSearch RAG:** [AGENT_HARNESS.md](AGENT_HARNESS.md)
-- **Vector Store RAG:** [VECTOR_STORE_RAG.md](VECTOR_STORE_RAG.md)
-- **Evaluation Framework:** [evaluation/framework.md](evaluation/framework.md)
+The `.env` file is already configured for local LLM endpoints:
+```bash
+LLM_BASE_URL=http://10.26.1.56:8708/v1
+LLM_MODEL=Qwen/Qwen3-235B-A22B-Instruct-2507-FP8
+EMBEDDINGS_BASE_URL=http://10.26.1.56:8786/v1/embeddings
+```
 
-### 3. Run Evaluation (Coming Soon)
+### 3. Deploy FileSearch RAG Agent
 
-1. Create 50 test questions based on categories
-2. Build FileSearch agent
-3. Build Vector Store agent
-4. Run both on same questions
-5. Compare: Correctness, Latency, Cost
-6. Analyze results by category
+**Option A: WSL/Linux (Recommended)**
+```bash
+# See WSL_DEPLOYMENT.md for full guide
+wsl
+cd "/mnt/d/Personal Projects/Agent-Harness-RAG"
+source venv_wsl/bin/activate
+langgraph dev
+```
+
+**Option B: Windows (with workaround for path bug)**
+```bash
+langgraph dev
+# Note: Windows has a known path bug - see WINDOWS_PATH_BUG.md
+```
+
+### 4. Access the Agent
+
+Open in browser:
+- **Studio UI**: https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024
+- **API Docs**: http://127.0.0.1:2024/docs
+- **Direct API**: http://127.0.0.1:2024
+
+### 5. Query the Agent
+
+Test with a sample question:
+```python
+# Via Python
+from src.filesearch_rag import FileSearchRAG
+
+rag = FileSearchRAG()
+result = rag.query("What is the attention mechanism in Transformers?")
+print(result['answer'])
+```
+
+### 6. Run Evaluation
+
+```bash
+# Coming soon: Automated evaluation script
+python evaluate.py --agent filesearch --dataset evaluation/datasets/evaluation_set.jsonl
+```
 
 ---
 
@@ -163,14 +213,16 @@ cp .env.example .env
 - [x] Vector Store RAG architecture documented
 - [x] Evaluation framework defined (12 categories, 3 metrics)
 - [x] Environment configuration
-- [x] Document corpus organized
+- [x] Document corpus organized (3 documents preprocessed to markdown)
+- [x] **50 test questions created** across 12 categories ([evaluation/datasets/evaluation_set.jsonl](evaluation/datasets/evaluation_set.jsonl))
+- [x] **FileSearch RAG agent implemented** using Deep Agents framework
+- [x] **LangGraph deployment configured** with auto-reload dev server
+- [x] **Windows path bug documented** with workarounds ([WINDOWS_PATH_BUG.md](WINDOWS_PATH_BUG.md))
 
 ### 🔄 In Progress
-- [ ] Create 50 test questions
-- [ ] Implement FileSearch agent
 - [ ] Implement Vector Store agent
-- [ ] Run evaluation
-- [ ] Analyze results
+- [ ] Run evaluation on both agents
+- [ ] Analyze comparative results
 
 ### 📋 Next Steps
 1. Create test questions from documents
@@ -206,10 +258,15 @@ Based on evaluation results, we'll decide:
 | Document | Purpose |
 |----------|---------|
 | [README.md](README.md) | Project overview (this file) |
-| [CLAUDE.md](CLAUDE.md) | AI assistant guide for this project |
+| [CLAUDE.md](CLAUDE.md) | Deep Agents framework guide for AI assistants |
+| [WSL_DEPLOYMENT.md](WSL_DEPLOYMENT.md) | **Recommended**: WSL/Linux deployment guide |
+| [WINDOWS_PATH_BUG.md](WINDOWS_PATH_BUG.md) | Windows path bug documentation & workarounds |
+| [FILESYSTEM_BACKEND_FIX.md](FILESYSTEM_BACKEND_FIX.md) | FilesystemBackend configuration guide |
+| [DEPLOYMENT.md](DEPLOYMENT.md) | General deployment instructions |
+| [evaluation/framework.md](evaluation/framework.md) | Evaluation categories and metrics |
+| [evaluation/dataset_schema.md](evaluation/dataset_schema.md) | Question dataset schema |
 | [AGENT_HARNESS.md](AGENT_HARNESS.md) | FileSearch RAG architecture details |
 | [VECTOR_STORE_RAG.md](VECTOR_STORE_RAG.md) | Vector Store RAG architecture details |
-| [evaluation/framework.md](evaluation/framework.md) | Evaluation categories and metrics |
 
 ---
 

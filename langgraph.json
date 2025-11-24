@@ -1,0 +1,16 @@
+{
+  "dependencies": [
+    "langchain",
+    "langgraph",
+    "langchain-openai",
+    "deepagents",
+    "python-dotenv"
+  ],
+  "graphs": {
+    "filesearch_agent": {
+      "path": "agents/filesearch_agent.py:graph",
+      "description": "FileSearch RAG using Deep Agents with grep/glob/read_file tools"
+    }
+  },
+  "env": ".env"
+}

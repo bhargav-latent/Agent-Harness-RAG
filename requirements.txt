@@ -4,6 +4,9 @@ langgraph>=0.1.0
 langchain-openai>=0.0.5
 langchain-community>=0.0.20
 
+# Deep Agents Framework
+deepagents
+
 # Vector Store (uses langchain-chroma, not chromadb directly)
 langchain-chroma>=0.1.0
 
