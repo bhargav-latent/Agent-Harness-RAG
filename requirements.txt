@@ -4,47 +4,24 @@ langgraph>=0.1.0
 langchain-openai>=0.0.5
 langchain-community>=0.0.20
 
-# Deep Agents (if available as package, otherwise from source)
-# deepagents  # Uncomment if available on PyPI
+# Vector Store (uses langchain-chroma, not chromadb directly)
+langchain-chroma>=0.1.0
 
-# Vector Store (for Vector Store RAG)
-chromadb>=0.4.0
+# Local Reranking (sentence-transformers for BAAI/bge-reranker-base)
 sentence-transformers>=2.2.0
 
-# Embeddings and Reranking (Local Models)
-transformers>=4.30.0
-torch>=2.0.0
-
-# Document Processing
+# Document Processing (PDF support)
 pypdf>=3.0.0
-python-docx>=0.8.11
 pdfplumber>=0.9.0
 
-# Text Splitting and Processing
+# Text Processing
 tiktoken>=0.5.0
 
 # Environment Variables
 python-dotenv>=1.0.0
 
-# API Server (for custom endpoints)
-fastapi>=0.100.0
-uvicorn>=0.23.0
-pydantic>=2.0.0
-
 # HTTP Requests
 requests>=2.31.0
-httpx>=0.24.0
-
-# Data Processing
-numpy>=1.24.0
-pandas>=2.0.0
-
-# Evaluation and Testing
-pytest>=7.4.0
-pytest-asyncio>=0.21.0
-
-# Monitoring (Optional)
-langsmith>=0.0.50
 
 # LangGraph CLI
 langgraph-cli>=0.1.0
@@ -52,3 +29,6 @@ langgraph-cli>=0.1.0
 # Utilities
 pyyaml>=6.0
 tqdm>=4.65.0
+
+# Testing
+pytest>=7.4.0
