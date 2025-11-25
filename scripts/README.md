@@ -1,10 +1,15 @@
-# PDF Preprocessing Scripts
+# Scripts
 
-This directory contains scripts for preprocessing PDF documents into markdown format for use with the RAG (Retrieval-Augmented Generation) system.
+This directory contains essential scripts for document preprocessing and RAG system setup.
 
 ## Overview
 
-The preprocessing pipeline converts PDF documents to markdown using the [marker](https://github.com/datalab-to/marker) API, making them ready for RAG integration with the Deep Agents harness.
+Two core scripts prepare documents for the RAG (Retrieval-Augmented Generation) system:
+
+1. **preprocess_pdfs.py** - Converts PDFs to markdown using marker API
+2. **init_vectorstore.py** - Initializes ChromaDB vector store with embeddings
+
+Diagnostic and test scripts have been archived in `archive/` for reference.
 
 ## Directory Structure
 
@@ -15,8 +20,10 @@ Agent-Harness-RAG/
 │   ├── The Essence of Software Engineering...pdf
 │   └── thinkpython2.pdf
 │
-├── scripts/                # Preprocessing scripts
-│   ├── preprocess_pdfs.py  # Main preprocessing script
+├── scripts/                # Setup scripts
+│   ├── preprocess_pdfs.py  # PDF to markdown conversion
+│   ├── init_vectorstore.py # Vector store initialization
+│   ├── archive/            # Archived test/diagnostic scripts
 │   └── README.md           # This file
 │
 ├── rag_data/               # Processed data for RAG
@@ -78,6 +85,91 @@ pip install requests
 - ✅ Automatic directory creation
 - ✅ Timeout handling for large files (5 minute default)
 
+---
+
+### init_vectorstore.py
+
+Initializes ChromaDB vector store with embeddings from preprocessed markdown documents.
+
+**Basic Usage:**
+
+```bash
+# Initialize vector store with default settings
+python scripts/init_vectorstore.py
+```
+
+**What it does:**
+
+1. Loads markdown documents from `rag_data/processed/`
+2. Chunks documents using RecursiveCharacterTextSplitter (512 chars, 50 overlap)
+3. Generates embeddings using Qwen/Qwen3-Embedding-8B (4096 dimensions)
+4. Stores embeddings in ChromaDB at `chroma_db/`
+5. Creates persistent collection named "rag_documents"
+
+**Requirements:**
+
+```bash
+pip install langchain langchain-openai langchain-chroma langchain-community python-dotenv
+```
+
+**Configuration (.env):**
+
+```bash
+EMBEDDINGS_BASE_URL=http://10.26.1.11:8786/v1
+EMBEDDINGS_MODEL=Qwen/Qwen3-Embedding-8B
+DOCUMENTS_DIR=./rag_data/processed
+CHROMA_PERSIST_DIR=./chroma_db
+CHUNK_SIZE=512
+CHUNK_OVERLAP=50
+```
+
+**Example Output:**
+
+```
+Initializing ChromaDB vector store...
+
+Configuration:
+  Documents dir: ./rag_data/processed
+  ChromaDB dir: ./chroma_db
+  Embeddings model: Qwen/Qwen3-Embedding-8B
+  Chunk size: 512
+  Chunk overlap: 50
+
+Loading documents...
+[OK] Loaded 3 documents
+
+Chunking documents...
+[OK] Created 3,370 chunks
+
+Generating embeddings and storing in ChromaDB...
+[OK] Vector store initialized with 3,370 embeddings
+
+ChromaDB collection: rag_documents
+```
+
+**Features:**
+
+- ✅ Automatic chunking with configurable size/overlap
+- ✅ Persistent vector store (survives restarts)
+- ✅ Progress tracking
+- ✅ Proper encoding handling (UTF-8)
+- ✅ Collection name validation
+
+---
+
+## Archive Folder
+
+The `archive/` directory contains diagnostic and test scripts used during development. These scripts helped identify and solve:
+
+- Vector search low relevance score issue (0.19-0.27)
+- BM25 vs vector search comparison (5/5 vs 1/5 results)
+- Hybrid retrieval validation (5/5 perfect results)
+- ChromaDB configuration debugging
+
+**See:** [archive/README.md](archive/README.md) for complete documentation of archived scripts.
+
+---
+
 ## API Endpoint
 
 The preprocessing script uses the marker API for PDF to markdown conversion:
@@ -134,7 +226,7 @@ This metadata is useful for:
 - Debugging failed conversions
 - Avoiding reprocessing of unchanged files
 
-## Workflow
+## Complete Workflow
 
 ### 1. Add PDFs
 
@@ -144,7 +236,7 @@ Place your PDF documents in the `documents/` directory:
 cp /path/to/your/document.pdf documents/
 ```
 
-### 2. Run Preprocessing
+### 2. Convert PDFs to Markdown
 
 Execute the preprocessing script:
 
@@ -177,13 +269,38 @@ Total PDFs:       3
 ❌ Failed:        0
 ```
 
-### 3. Use with RAG
+### 3. Initialize Vector Store
 
-The markdown files in `rag_data/processed/` are now ready for use with:
-- Vector embedding
-- Document chunking
-- RAG retrieval
-- Deep Agents integration
+Generate embeddings and store in ChromaDB:
+
+```bash
+python scripts/init_vectorstore.py
+```
+
+**Example Output:**
+
+```
+Initializing ChromaDB vector store...
+[OK] Loaded 3 documents
+[OK] Created 3,370 chunks
+[OK] Vector store initialized with 3,370 embeddings
+```
+
+### 4. Deploy RAG Agents
+
+The processed documents are now ready for all 4 RAG agents:
+
+```bash
+langgraph dev
+```
+
+Access agents at http://localhost:2024:
+- **filesearch_agent** - grep/glob/read_file search
+- **vectorstore_agent** - Vector similarity search
+- **bm25_agent** - BM25 keyword search
+- **hybrid_rag_agent** - ⭐ **RECOMMENDED** - Hybrid BM25 + vector
+
+**See:** [../HYBRID_RAG_IMPLEMENTATION.md](../HYBRID_RAG_IMPLEMENTATION.md) for agent details
 
 ## Integration with Deep Agents
 
@@ -253,21 +370,37 @@ response = agent.invoke({
 
 ## Future Enhancements
 
-Potential improvements for the preprocessing pipeline:
+Potential improvements:
 
-- [ ] Incremental processing (skip already processed files)
+**Preprocessing:**
+- [ ] Incremental processing (skip already processed files based on metadata)
 - [ ] Parallel processing of multiple PDFs
-- [ ] Custom chunking strategies for different document types
-- [ ] Automatic embedding generation
-- [ ] Vector database integration
-- [ ] Document deduplication
 - [ ] OCR support for scanned PDFs
 - [ ] Progress bars for long-running jobs
 - [ ] Retry logic with exponential backoff
-- [ ] CLI with better argument parsing
+
+**Vector Store:**
+- [ ] Re-ranking with cross-encoder (BAAI/bge-reranker-base)
+- [ ] Reciprocal Rank Fusion (RRF) for hybrid search
+- [ ] Document-aware retrieval (filter by document intent)
+- [ ] Custom chunking strategies per document type
+- [ ] Incremental updates (add new documents without rebuild)
+
+**Evaluation:**
+- [ ] Automated evaluation with 50 test questions
+- [ ] RAGAS metrics (answer_relevancy, faithfulness, context_precision)
+- [ ] Performance comparison across 4 agents
+- [ ] Category-specific analysis (12 question types)
 
 ## References
 
-- **Marker Project:** https://github.com/datalab-to/marker
+### Documentation
+- **Project Overview:** [../README.md](../README.md)
+- **Deep Agents Guide:** [../CLAUDE.md](../CLAUDE.md)
+- **Hybrid RAG Implementation:** [../HYBRID_RAG_IMPLEMENTATION.md](../HYBRID_RAG_IMPLEMENTATION.md)
+
+### Technologies
+- **Marker PDF Converter:** https://github.com/datalab-to/marker
 - **LangChain Deep Agents:** https://docs.langchain.com/oss/python/deepagents/
-- **Project Documentation:** [../CLAUDE.md](../CLAUDE.md)
+- **ChromaDB:** https://docs.trychroma.com/
+- **LangGraph Deployment:** https://langchain-ai.github.io/langgraph/

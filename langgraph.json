@@ -3,13 +3,19 @@
     "langchain",
     "langgraph",
     "langchain-openai",
+    "langchain-chroma",
+    "langchain-community",
     "deepagents",
     "python-dotenv"
   ],
   "graphs": {
     "filesearch_agent": {
       "path": "agents/filesearch_agent.py:graph",
-      "description": "FileSearch RAG using Deep Agents with grep/glob/read_file tools"
+      "description": "FileSearch RAG using Deep Agents with grep/glob/read_file tools for terminal-based search"
+    },
+    "hybrid_rag_agent": {
+      "path": "agents/hybrid_rag_agent.py:graph",
+      "description": "Hybrid RAG combining BM25 keyword matching with vector similarity search (RECOMMENDED)"
     }
   },
   "env": ".env"
