@@ -235,10 +235,14 @@ When answering questions:
 
 Provide clear, accurate answers with citations."""
 
-# Create LangGraph agent with hybrid search tools
-from langgraph.prebuilt import create_react_agent
+# Create Deep Agent with hybrid search tools and planning capability
+from deepagents import create_deep_agent
 
-graph = create_react_agent(
-    llm,
+agent = create_deep_agent(
+    model=llm,
+    system_prompt=system_prompt,
     tools=[hybrid_search, bm25_only_search, vector_only_search]
 )
+
+# Compile to LangGraph for deployment
+graph = agent
