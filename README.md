@@ -25,6 +25,13 @@ This repository provides a framework to **scientifically evaluate and compare RA
 | **Tool Calls (median)** | **2** | 6 | 3x more |
 | **Perfect Scores (5/5)** | 53% | **80%** | +27% |
 
+> **Note on Benchmark Conditions:**
+> - **Model:** Qwen/Qwen3-235B-A22B-Instruct-2507-FP8
+> - **Throughput during benchmark:** ~20 tokens/second (degraded)
+> - **Typical throughput:** 60-70 tokens/second
+>
+> Latency results are ~3x higher than expected due to reduced model throughput during testing. Under normal conditions (60-70 TPS), expect latencies of approximately **10s for Hybrid** and **20s for FileSearch**.
+
 ### Overall Comparison
 
 ![Overall Comparison](assets/overall_comparison.png)
