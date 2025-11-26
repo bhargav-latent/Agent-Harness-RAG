@@ -29,6 +29,7 @@ This repository provides a framework to **scientifically evaluate and compare RA
 > - **Model:** Qwen/Qwen3-235B-A22B-Instruct-2507-FP8
 > - **Throughput during benchmark:** ~20 tokens/second (degraded)
 > - **Typical throughput:** 60-70 tokens/second
+> - **Controlled variables:** Both agents use the same LangGraph agent harness and Deep Agents planning layer. The only difference is the retrieval mechanism (Hybrid RAG vs FileSearch tools).
 >
 > Latency results are ~3x higher than expected due to reduced model throughput during testing. Under normal conditions (60-70 TPS), expect latencies of approximately **10s for Hybrid** and **20s for FileSearch**.
 
