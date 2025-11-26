@@ -343,6 +343,19 @@ Both agents struggle with:
 
 ---
 
+## Contributing
+
+We welcome contributions! Areas where you can help:
+
+- **Evaluation Dataset**: Add new test questions, especially for challenging categories
+- **Tool Development**: Build MCP tools for markdown parsing and document processing
+- **Agent Improvements**: Enhance planning prompts and retrieval strategies
+- **Documentation**: Improve guides and add examples
+
+Feel free to open issues or submit pull requests.
+
+---
+
 ## References
 
 - [LangGraph Documentation](https://langchain-ai.github.io/langgraph/)
