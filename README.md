@@ -1,150 +1,196 @@
 # Agent-Harness-RAG
 
-> **Systematic comparison of RAG approaches: FileSearch vs Vector Store vs BM25 vs Hybrid**
+> **Systematic comparison of RAG approaches: Hybrid RAG vs FileSearch RAG**
 
 ## Project Objective
 
-This repository provides a framework to **scientifically evaluate and compare four RAG (Retrieval-Augmented Generation) approaches** for searching documents and answering questions:
+This repository provides a framework to **scientifically evaluate and compare RAG (Retrieval-Augmented Generation) approaches** for document question-answering:
 
-1. **FileSearch RAG** - Terminal-based search using grep/glob/read_file
-2. **Vector Store RAG** - Semantic search using ChromaDB with embeddings (⚠️ low relevance scores)
-3. **BM25 RAG** - Keyword-based search using BM25 algorithm (✅ perfect keyword matching)
-4. **Hybrid RAG** - Combines BM25 + vector search (✅ **RECOMMENDED**)
+1. **Hybrid RAG** - Combines BM25 keyword matching + ChromaDB vector similarity search
+2. **FileSearch RAG** - Agentic search using grep/glob/read_file tools (Deep Agents)
 
-**Goal:** Make data-driven decisions about which RAG approach works best for our document corpus and query patterns.
+**Goal:** Make data-driven decisions about which RAG approach works best for different use cases.
 
 ---
 
-## Why This Matters
+## Benchmark Results
 
-Rather than guessing which RAG approach is better, we **measure and compare** using:
-- **50 test questions** across 12 categories
-- **3 simple metrics**: Correctness, Latency, Cost per query
-- **Real data** from our document corpus
+### Summary (44 Questions, Outliers Excluded)
+
+| Metric | hybrid_rag_agent | filesearch_agent | Ratio |
+|--------|------------------|------------------|-------|
+| **Avg Score** | 4.20/5 | **4.67/5** | +11% |
+| **Latency (median)** | **31s** | 58s | 1.9x slower |
+| **Tokens (median)** | **12,137** | 37,294 | 3.1x more |
+| **Tool Calls (median)** | **2** | 6 | 3x more |
+| **Perfect Scores (5/5)** | 53% | **80%** | +27% |
+
+### Overall Comparison
+
+![Overall Comparison](assets/overall_comparison.png)
+
+### Accuracy vs Latency Trade-off
+
+![Trade-off Analysis](assets/tradeoff.png)
+
+### Score Distribution
+
+![Score Distribution](assets/score_distribution.png)
+
+### Accuracy by Category
+
+![Score by Category](assets/score_by_category.png)
+
+### Performance by Category
+
+| Category | Hybrid | FileSearch | Winner |
+|----------|--------|------------|--------|
+| acronyms | 4.7 | 5.0 | FileSearch |
+| conceptual | 4.4 | 5.0 | FileSearch |
+| contextual | 3.5 | 3.8 | FileSearch |
+| exact_match | 4.2 | 4.6 | FileSearch |
+| factual | 4.5 | 5.0 | FileSearch |
+| formulas | 5.0 | 5.0 | Tie |
+| multi_hop | 4.0 | 4.0 | Tie |
+| negation | 3.3 | 3.7 | FileSearch |
+| semantic | 4.2 | 5.0 | FileSearch |
+| table_data | 3.8 | 5.0 | FileSearch |
+| temporal | **4.7** | 4.0 | Hybrid |
+
+### Key Findings
+
+1. **FileSearch is more accurate** (4.67 vs 4.20) but uses 3x more resources
+2. **Hybrid is faster and cheaper** - ideal for high-volume production use
+3. **Both struggle with contextual and negation queries** (scores 3.3-3.8)
+4. **Hybrid wins on temporal queries** (4.7 vs 4.0)
+5. **FileSearch excels at table_data and semantic queries** (5.0 vs 3.8-4.2)
+
+### Recommendation
+
+| Use Case | Recommended Agent |
+|----------|-------------------|
+| Production (cost-sensitive) | **hybrid_rag_agent** |
+| High accuracy required | **filesearch_agent** |
+| Formula/factual queries | Either (both excel) |
+| Table data extraction | filesearch_agent |
+| High throughput | hybrid_rag_agent |
 
 ---
 
-## The Four RAG Approaches
+## Evaluation Methodology
 
-### Approach 1: FileSearch RAG
+### Dataset
 
-**How it works:** Uses terminal tools (grep, glob, read_file) for exact keyword matching
+- **44 evaluation questions** across 11 categories
+- Questions sourced from 3 documents:
+  - `attention_is_all_you_need.md` (Transformer paper)
+  - `thinkpython2.md` (Python programming book)
+  - `The Essence of Software Engineering.md` (SE principles)
 
-**Status:** ✅ Implemented
+### Question Categories
 
-**Strengths:**
-- ✅ Exact keyword matching
-- ✅ Fast for specific terms
-- ✅ Transparent search process
-- ✅ No indexing overhead
+| Category | Count | Description |
+|----------|-------|-------------|
+| exact_match | 5 | Finding specific terms, codes, identifiers |
+| semantic | 6 | Understanding meaning despite different wording |
+| table_data | 4 | Extracting from tables and comparisons |
+| formulas | 4 | Retrieving equations and calculations |
+| multi_hop | 5 | Synthesizing info from multiple sources |
+| acronyms | 3 | Bridging technical shorthand |
+| contextual | 4 | Same word, different contexts |
+| negation | 3 | Understanding "not", "without" |
+| temporal | 3 | Time-based and version queries |
+| factual | 4 | Exact numbers, dates, names |
+| conceptual | 5 | High-level "why" and "how" questions |
 
-**Best for:** Exact matches, structured queries, small corpus
+### Metrics Collected
+
+| Metric | Description |
+|--------|-------------|
+| **Correctness Score** | LLM-as-judge evaluation (1-5 scale) |
+| **Latency** | End-to-end response time (ms) |
+| **Token Usage** | Total input + output tokens |
+| **Tool Calls** | Number of tool invocations |
+
+### LLM-as-Judge Evaluation
+
+Each answer is evaluated by the same LLM (Qwen/Qwen3-235B-A22B-Instruct-2507-FP8) using a structured prompt:
+
+```
+Score 1-5:
+5 = Perfect, complete, accurate answer
+4 = Mostly correct with minor omissions
+3 = Partially correct, missing key details
+2 = Mostly incorrect or very incomplete
+1 = Wrong or irrelevant answer
+```
+
+### Outlier Handling
+
+Queries with runaway behavior (>1M tokens or >5 min latency) are excluded from aggregate statistics to prevent skewing:
+- **q037** (filesearch): 9M tokens, 34 min
+- **q045** (filesearch): 9M tokens, 14 min
+
+Median values are used for latency and token metrics to reduce outlier impact.
 
 ---
 
-### Approach 2: Vector Store RAG
+## Architecture
 
-**How it works:** Semantic similarity search with ChromaDB + Qwen embeddings
+### Hybrid RAG Agent
 
-**Status:** ⚠️ Implemented but has low relevance scores (0.19-0.27)
+```
+┌─────────────────────────────────────────────────────────┐
+│                    hybrid_rag_agent                     │
+├─────────────────────────────────────────────────────────┤
+│  1. Query received                                      │
+│  2. BM25 keyword search (LangChain BM25Retriever)       │
+│  3. Vector similarity search (ChromaDB + Qwen embeddings)│
+│  4. Merge & deduplicate results                         │
+│  5. LLM generates answer from retrieved chunks          │
+└─────────────────────────────────────────────────────────┘
+```
 
-**Strengths:**
-- ⚠️ Semantic understanding (limited by low scores)
-- ⚠️ Handles synonyms (when it works)
-- ❌ Poor ranking quality
+**Tools:** `hybrid_search` (BM25 + vector combined)
 
-**Best for:** Not recommended as standalone - use Hybrid instead
+### FileSearch RAG Agent
 
-**Issue:** Vector embeddings return very low similarity scores and poor ranking. See [docs/HYBRID_RAG_IMPLEMENTATION.md](docs/HYBRID_RAG_IMPLEMENTATION.md) for diagnosis.
+```
+┌─────────────────────────────────────────────────────────┐
+│                   filesearch_agent                      │
+├─────────────────────────────────────────────────────────┤
+│  1. Query received                                      │
+│  2. Agent plans search strategy                         │
+│  3. Uses tools iteratively:                             │
+│     - glob: Find files by pattern                       │
+│     - grep: Search content with regex                   │
+│     - read_file: Read file contents                     │
+│  4. Agent synthesizes answer from findings              │
+└─────────────────────────────────────────────────────────┘
+```
 
----
-
-### Approach 3: BM25 RAG
-
-**How it works:** Keyword-based search using BM25 algorithm (classic IR)
-
-**Status:** ✅ Implemented - **Perfect keyword matching (5/5 for "attention mechanism")**
-
-**Strengths:**
-- ✅ Perfect keyword matching
-- ✅ Fast and efficient
-- ✅ No embeddings needed
-- ✅ Proven algorithm
-
-**Best for:** Keyword queries, technical terms, exact phrases
-
----
-
-### Approach 4: Hybrid RAG ⭐ **RECOMMENDED**
-
-**How it works:** Combines BM25 keyword matching with vector similarity search
-
-**Status:** ✅ Implemented and tested - **Best results**
-
-**Strengths:**
-- ✅ BM25 keyword precision
-- ✅ Vector semantic understanding
-- ✅ Best of both worlds
-- ✅ BM25 compensates for vector weaknesses
-
-**Results:** 5/5 relevant chunks for "attention mechanism" query
-
-**Best for:** All query types - keyword + semantic queries
-
-**Details:** See [docs/HYBRID_RAG_IMPLEMENTATION.md](docs/HYBRID_RAG_IMPLEMENTATION.md)
+**Tools:** `glob`, `grep`, `read_file`
 
 ---
 
 ## Technology Stack
 
-### Models (All Local)
-- **LLM:** Qwen/Qwen2.5-32B-Instruct-AWQ @ `http://10.26.1.11:8786/v1`
-- **Embeddings:** Qwen/Qwen3-Embedding-8B (4096 dims) @ `http://10.26.1.11:8786/v1`
+### Models (Local Deployment)
+
+| Component | Model | Endpoint |
+|-----------|-------|----------|
+| **LLM** | Qwen/Qwen3-235B-A22B-Instruct-2507-FP8 | http://10.26.1.56:8708/v1 |
+| **Embeddings** | Qwen/Qwen3-Embedding-8B (4096 dims) | http://10.26.1.11:8786/v1 |
 
 ### Framework
-- **Deep Agents** (LangChain) - Agent orchestration with planning
-- **Middleware:** TodoListMiddleware (multi-hop reasoning)
-- **Backend:** FilesystemBackend (virtual mode for sandboxed operations)
-- **Vector Store:** ChromaDB (persistent, 3,370 chunks)
-- **BM25:** LangChain BM25Retriever (keyword matching)
-- **Chunking:** RecursiveCharacterTextSplitter (512 chars, 50 overlap)
 
-### Deployment
-- **LangGraph CLI** - Local development server with auto-reload
-- **4 Deployed Agents:** filesearch, vectorstore, bm25, hybrid_rag
-
----
-
-## Evaluation Framework
-
-### 12 Question Categories (50 questions total)
-
-| Category | Questions | Tests |
-|----------|-----------|-------|
-| Exact Match / Keywords | 5 | Finding specific terms, codes, identifiers |
-| Semantic Similarity | 6 | Understanding meaning despite different wording |
-| Table & Structured Data | 4 | Extracting from tables and comparisons |
-| Formulas & Math | 4 | Retrieving equations and calculations |
-| Multi-hop Reasoning | 5 | Synthesizing info from multiple sources |
-| Code Understanding | 4 | Finding and explaining code patterns |
-| Acronyms & Abbreviations | 3 | Bridging technical shorthand |
-| Contextual Disambiguation | 4 | Same word, different contexts |
-| Negation & Exclusion | 3 | Understanding "not", "without" |
-| Temporal & Versioning | 3 | Time-based and version queries |
-| Factual Precision | 4 | Exact numbers, dates, names |
-| Conceptual / Abstract | 5 | High-level "why" and "how" questions |
-
-**See:** [evaluation/framework.md](evaluation/framework.md)
-
----
-
-### 3 Evaluation Metrics
-
-| Metric | What it measures |
-|--------|------------------|
-| **Correctness** | Is the final answer factually correct? |
-| **Latency** | How fast is the response? |
-| **Cost per query** | How expensive is each query to run? |
+| Component | Technology |
+|-----------|------------|
+| Agent Orchestration | LangGraph + Deep Agents |
+| Vector Store | ChromaDB (3,370 chunks) |
+| BM25 Search | LangChain BM25Retriever |
+| Chunking | RecursiveCharacterTextSplitter (512 chars, 50 overlap) |
+| API Server | LangGraph CLI (port 2026) |
 
 ---
 
@@ -152,50 +198,47 @@ Rather than guessing which RAG approach is better, we **measure and compare** us
 
 ```
 Agent-Harness-RAG/
-├── README.md                      # This file
-├── .env                           # Environment configuration
-├── requirements.txt               # Python dependencies
-├── langgraph.json                 # LangGraph deployment (4 agents)
-├── docs/                          # 📚 Documentation
-│   ├── README.md                  # Documentation index
-│   ├── HYBRID_RAG_IMPLEMENTATION.md  # ⭐ Hybrid RAG guide
-│   ├── CLAUDE.md                  # Deep Agents framework guide
-│   ├── WSL_DEPLOYMENT.md          # WSL/Linux deployment (recommended)
-│   ├── WINDOWS_PATH_BUG.md        # Windows path bug & workarounds
-│   ├── FILESYSTEM_BACKEND_FIX.md  # FilesystemBackend configuration
-│   ├── DEPLOYMENT.md              # General deployment guide
-│   ├── DEPLOYMENT_SUMMARY.md      # Deployment summary
-│   ├── VECTORSTORE_SETUP.md       # Vector store setup
-│   ├── AGENT_HARNESS.md           # FileSearch architecture
-│   └── VECTOR_STORE_RAG.md        # Vector Store architecture
-├── agents/                        # 🤖 RAG Agents
-│   ├── filesearch_agent.py        # FileSearch RAG (grep/glob/read)
-│   ├── vectorstore_agent.py       # Vector Store RAG (ChromaDB)
-│   ├── bm25_agent.py              # BM25 Keyword RAG
-│   └── hybrid_rag_agent.py        # Hybrid RAG ⭐ (RECOMMENDED)
-├── scripts/                       # 🛠️ Setup Scripts
-│   ├── preprocess_pdfs.py         # PDF to markdown conversion
-│   ├── init_vectorstore.py        # Initialize ChromaDB with embeddings
-│   ├── README.md                  # Scripts documentation
-│   └── archive/                   # Archived diagnostic scripts
-├── tests/                         # 🧪 Tests
-│   └── archive/                   # Archived test scripts
-├── rag_data/
-│   ├── processed/                 # Preprocessed markdown (3,370 chunks)
-│   │   ├── attention_is_all_you_need.md
-│   │   ├── thinkpython2.md
-│   │   └── The Essence of Software Engineering...md
-│   └── metadata.json              # Processing metadata
-├── chroma_db/                     # ChromaDB vector store (persistent)
-├── evaluation/
-│   ├── framework.md               # Evaluation framework
-│   ├── dataset_schema.md          # Question dataset schema
-│   └── datasets/
-│       └── evaluation_set.jsonl   # 50 test questions
-└── documents/                     # Original PDF documents
-    ├── attention_is_all_you_need.pdf
-    ├── thinkpython2.pdf
-    └── The Essence of Software Engineering...pdf
+├── README.md                          # This file
+├── .env                               # Environment configuration
+├── requirements.txt                   # Python dependencies
+├── langgraph.json                     # LangGraph deployment config
+│
+├── agents/                            # RAG Agent implementations
+│   ├── hybrid_rag_agent.py            # Hybrid RAG (BM25 + Vector)
+│   └── filesearch_agent.py            # FileSearch RAG (Deep Agents)
+│
+├── src/                               # Core modules
+│   ├── benchmark_agents.py            # Benchmark orchestrator
+│   ├── langgraph_client.py            # LangGraph API client
+│   ├── llm_judge.py                   # LLM-as-judge evaluator
+│   ├── vectorstore_rag.py             # Vector store utilities
+│   └── filesearch_rag.py              # FileSearch utilities
+│
+├── evaluation/                        # Evaluation framework
+│   ├── datasets/
+│   │   └── evaluation_set.jsonl       # 44 test questions
+│   ├── results/
+│   │   ├── benchmark_*.csv            # Benchmark results
+│   │   └── benchmark_*.jsonl          # Detailed results
+│   ├── framework.md                   # Evaluation methodology
+│   └── dataset_schema.md              # Question schema
+│
+├── scripts/                           # Setup scripts
+│   ├── init_vectorstore.py            # Initialize ChromaDB
+│   └── preprocess_pdfs.py             # PDF to markdown
+│
+├── rag_data/                          # Document corpus
+│   └── processed/                     # Preprocessed markdown
+│       ├── attention_is_all_you_need.md
+│       ├── thinkpython2.md
+│       └── The Essence of Software Engineering.md
+│
+├── chroma_db/                         # ChromaDB persistent storage
+│
+└── docs/                              # Additional documentation
+    ├── HYBRID_RAG_IMPLEMENTATION.md
+    ├── DEPLOYMENT.md
+    └── ...
 ```
 
 ---
@@ -205,161 +248,90 @@ Agent-Harness-RAG/
 ### 1. Install Dependencies
 
 ```bash
-# Install Python dependencies
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
 ### 2. Configure Environment
 
-The `.env` file is already configured for local LLM endpoints:
 ```bash
+# .env file
 LLM_BASE_URL=http://10.26.1.56:8708/v1
 LLM_MODEL=Qwen/Qwen3-235B-A22B-Instruct-2507-FP8
-EMBEDDINGS_BASE_URL=http://10.26.1.56:8786/v1/embeddings
+EMBEDDINGS_BASE_URL=http://10.26.1.11:8786/v1
 ```
 
-### 3. Deploy FileSearch RAG Agent
-
-**Option A: WSL/Linux (Recommended)**
-```bash
-# See docs/WSL_DEPLOYMENT.md for full guide
-wsl
-cd "/mnt/d/Personal Projects/Agent-Harness-RAG"
-source venv_wsl/bin/activate
-langgraph dev
-```
-
-**Option B: Windows (with workaround for path bug)**
-```bash
-langgraph dev
-# Note: Windows has a known path bug - see docs/WINDOWS_PATH_BUG.md
-```
-
-### 4. Access the Agent
-
-Open in browser:
-- **Studio UI**: https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024
-- **API Docs**: http://127.0.0.1:2024/docs
-- **Direct API**: http://127.0.0.1:2024
-
-### 5. Query the Agent
-
-Test with a sample question:
-```python
-# Via Python
-from src.filesearch_rag import FileSearchRAG
-
-rag = FileSearchRAG()
-result = rag.query("What is the attention mechanism in Transformers?")
-print(result['answer'])
-```
-
-### 6. Run Evaluation
+### 3. Initialize Vector Store
 
 ```bash
-# Coming soon: Automated evaluation script
-python evaluate.py --agent filesearch --dataset evaluation/datasets/evaluation_set.jsonl
+python scripts/init_vectorstore.py
 ```
+
+### 4. Start LangGraph Server
+
+```bash
+langgraph dev --port 2026
+```
+
+### 5. Run Benchmark
+
+```bash
+python src/benchmark_agents.py
+```
+
+Results are saved to `evaluation/results/benchmark_*.csv`
 
 ---
 
-## Current Status
+## Benchmark Files
 
-### ✅ Complete
-- [x] **All 4 RAG agents implemented** (FileSearch, Vector Store, BM25, Hybrid)
-- [x] **Hybrid RAG tested and validated** - 5/5 perfect results for keyword queries
-- [x] **Vector search diagnosis complete** - Identified low relevance score issue (0.19-0.27)
-- [x] **BM25 proven effective** - Perfect keyword matching (5/5 for "attention mechanism")
-- [x] Evaluation framework defined (12 categories, 3 metrics)
-- [x] 50 test questions created across 12 categories
-- [x] ChromaDB vector store initialized (3,370 chunks)
-- [x] LangGraph deployment with 4 agents
-- [x] Comprehensive documentation ([HYBRID_RAG_IMPLEMENTATION.md](HYBRID_RAG_IMPLEMENTATION.md))
-
-### 🔄 In Progress
-- [ ] Run evaluation on all 4 agents with 50 test questions
-- [ ] Compare performance across agents and question categories
-- [ ] Analyze results and generate report
-
-### 📋 Next Steps
-1. Run automated evaluation with 50 questions
-2. Measure correctness, latency, cost per agent
-3. Analyze results by question category
-4. Make final architecture recommendations
-5. Optional: Implement re-ranking enhancement for Hybrid RAG
+| File | Description |
+|------|-------------|
+| `src/benchmark_agents.py` | Main benchmark orchestrator |
+| `src/langgraph_client.py` | HTTP client for LangGraph API |
+| `src/llm_judge.py` | LLM-as-judge implementation |
+| `evaluation/datasets/evaluation_set.jsonl` | 44 test questions |
+| `evaluation/results/*.csv` | Benchmark results |
 
 ---
 
-## Expected Outcomes
+## Known Issues
 
-### Questions to Answer
+### Runaway Queries
 
-1. **Overall:** Which approach is better for our use case?
-2. **By Category:** Where does FileSearch excel? Where does Vector Store win?
-3. **Performance:** What are the speed/cost tradeoffs?
-4. **Hybrid:** Should we combine both approaches?
-5. **Optimization:** How can we improve each method?
+Some questions cause excessive token usage (>1M tokens):
+- Vague "what was excluded" type questions
+- Cross-document comparison queries
 
-### Decision Framework
+**Mitigation:** These are excluded from aggregate statistics.
 
-Based on evaluation results, we'll decide:
-- **Use FileSearch** - If exact matching and speed are priorities
-- **Use Vector Store** - If semantic understanding is critical
-- **Use Hybrid** - Combine both for best of both worlds
-- **Optimize Current** - Improve FileSearch with better tools/strategies
+### Challenging Categories
+
+Both agents struggle with:
+- **Contextual disambiguation** (3.5-3.8/5)
+- **Negation queries** (3.3-3.7/5)
 
 ---
 
-## Key Documents
+## Future Improvements
 
-| Document | Purpose |
-|----------|---------|
-| [README.md](README.md) | Project overview (this file) |
-| [HYBRID_RAG_IMPLEMENTATION.md](HYBRID_RAG_IMPLEMENTATION.md) | **⭐ Hybrid RAG implementation guide and test results** |
-| [CLAUDE.md](CLAUDE.md) | Deep Agents framework guide for AI assistants |
-| [langgraph.json](langgraph.json) | LangGraph deployment config (4 agents) |
-| [WSL_DEPLOYMENT.md](WSL_DEPLOYMENT.md) | WSL/Linux deployment guide |
-| [WINDOWS_PATH_BUG.md](WINDOWS_PATH_BUG.md) | Windows path bug documentation & workarounds |
-| [FILESYSTEM_BACKEND_FIX.md](FILESYSTEM_BACKEND_FIX.md) | FilesystemBackend configuration guide |
-| [evaluation/framework.md](evaluation/framework.md) | Evaluation categories and metrics |
-| [evaluation/dataset_schema.md](evaluation/dataset_schema.md) | Question dataset schema (50 questions) |
+1. **Re-ranking**: Add cross-encoder re-ranking for Hybrid RAG
+2. **Query classification**: Route queries to optimal agent
+3. **Timeout handling**: Add token/time limits for runaway prevention
+4. **Chunk optimization**: Experiment with different chunk sizes
 
 ---
 
 ## References
 
-### Deep Agents Framework
-- [Deep Agents Overview](https://docs.langchain.com/oss/python/deepagents/overview)
-- [Deep Agents Blog Post](https://blog.langchain.com/deep-agents/)
 - [LangGraph Documentation](https://langchain-ai.github.io/langgraph/)
-
-### RAG Best Practices
+- [Deep Agents Overview](https://docs.langchain.com/oss/python/deepagents/overview)
 - [ChromaDB Integration](https://python.langchain.com/docs/integrations/vectorstores/chroma/)
-- [LangChain Reranking](https://python.langchain.com/docs/integrations/document_transformers/cross_encoder_reranker/)
-- [Chunking Strategies Research](https://research.trychroma.com/evaluating-chunking)
-
----
-
-## Contributing
-
-This is a research/evaluation project. Contributions welcome for:
-- Test question creation
-- Agent implementations
-- Evaluation improvements
-- Documentation enhancements
+- [BM25 Retriever](https://python.langchain.com/docs/integrations/retrievers/bm25/)
 
 ---
 
 ## License
 
-[Your License Here]
-
----
-
-## Summary
-
-This repository implements and compares **4 RAG approaches** (FileSearch, Vector Store, BM25, Hybrid) for document question-answering.
-
-**Key Finding:** **Hybrid RAG (BM25 + vector search) is recommended** as it combines perfect keyword matching (5/5) with semantic understanding, compensating for vector search weaknesses.
-
-**Status:** All agents deployed via LangGraph CLI. Ready for evaluation with 50 test questions.
+MIT License

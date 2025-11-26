@@ -1,0 +1,25 @@
+question_id,question,category,difficulty,agent,ground_truth,answer,latency_ms,tool_calls,input_tokens,output_tokens,total_tokens,success,error,correctness_score,correctness_explanation
+q001,What is the value of dmodel used in the Transformer architecture?,exact_match,easy,hybrid_rag_agent,"The Transformer uses dmodel = 512 as the dimension for all sub-layers in the model, as well as the embedding layers.","The value of `d_model` used in the Transformer architecture is **512**. This is explicitly stated in the research paper ""attention_is_all_you_need.md"", which mentions: ""all sub-layers in the model, as well as the embedding layers, produce outputs of dimension dmodel = 512"" [attention_is_all_you_need.md].",15510.6,2,11735,99,11834,True,,5,"The system answer is factually correct, complete, and matches the ground truth. It accurately states that dmodel = 512 and correctly references the role of this dimension in sub-layers and embedding layers, with a proper citation from the source material."
+q001,What is the value of dmodel used in the Transformer architecture?,exact_match,easy,filesearch_agent,"The Transformer uses dmodel = 512 as the dimension for all sub-layers in the model, as well as the embedding layers.","Now I can see the value of d_model in the Transformer architecture. According to the paper ""Attention Is All You Need"", the value of d_model is 512.
+
+This is explicitly stated in section 3.1 (Encoder and Decoder Stacks): ""To facilitate these residual connections, all sub-layers in the model, as well as the embedding layers, produce outputs of dimension dmodel = 512.""
+
+Additionally, in section 3.3 (Position-wise Feed-Forward Networks), it states: ""The dimensionality of input and output is dmodel = 512, and the inner-layer has dimensionality dff = 2048.""
+
+The value is also used in the positional encoding formulas in section 3.5, where d_model appears in the denominator of the exponent.
+
+Therefore, the value of d_model used in the Transformer architecture is 512.",75071.28,8,47061,471,47532,True,,5,"The system answer is factually correct, complete, and matches the ground truth by accurately stating that dmodel = 512 in the Transformer architecture. It provides additional context from multiple sections of the paper, reinforcing the correctness and depth of the response."
+q002,How many identical layers are in the Transformer's encoder stack?,exact_match,easy,hybrid_rag_agent,The encoder is composed of a stack of N = 6 identical layers.,"The Transformer's encoder stack consists of **N = 6 identical layers**.
+
+This is explicitly stated in the research paper *attention_is_all_you_need.md*:
+
+> ""Encoder: The encoder is composed of a stack of N = 6 identical layers."" [[3]](#page-3-3)
+
+Each of these layers includes two sub-layers: a multi-head self-attention mechanism and a position-wise fully connected feed-forward network, with residual connections and layer normalization applied around each sub-layer.",18723.89,2,11871,129,12000,True,,5,"The system answer correctly states that the Transformer's encoder stack consists of N = 6 identical layers, which matches the ground truth exactly. It also provides additional context from the source paper and describes the internal structure of the layers, enhancing completeness without introducing errors."
+q002,How many identical layers are in the Transformer's encoder stack?,exact_match,easy,filesearch_agent,The encoder is composed of a stack of N = 6 identical layers.,"The Transformer's encoder stack consists of **6 identical layers**.
+
+This is explicitly stated in the paper ""Attention Is All You Need"" in section 3.1:
+
+> ""Encoder: The encoder is composed of a stack of N = 6 identical layers."" 
+
+Each of these layers contains two sub-layers: a multi-head self-attention mechanism followed by a position-wise fully connected feed-forward network, with residual connections around each sub-layer [attention_is_all_you_need.md, line 65].",40190.85,8,39427,251,39678,True,,5,"The system answer correctly states that the Transformer's encoder stack consists of 6 identical layers, which matches the ground truth. It also provides additional context from the source paper, including a direct quote and structural details, without introducing any inaccuracies."
