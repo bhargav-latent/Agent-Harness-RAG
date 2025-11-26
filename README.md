@@ -317,16 +317,37 @@ Some questions cause excessive token usage (>1M tokens):
 ### Challenging Categories
 
 Both agents struggle with:
-- **Contextual disambiguation** (3.5-3.8/5)
-- **Negation queries** (3.3-3.7/5)
+
+**Contextual disambiguation** (3.5-3.8/5)
+- *Example:* "What does 'layer' mean in the Transformer vs in Think Python?"
+- *Example:* "How is 'function' used differently in the Transformer paper vs programming?"
+
+**Negation queries** (3.3-3.7/5)
+- *Example:* "What features does Think Python NOT cover?"
+- *Example:* "Which attention mechanisms are NOT used in the Transformer?"
 
 ---
 
 ## Future Improvements
 
+### Tool Enhancements
+- **MCP Integration**: Adopt latest MCPs built for terminal operations
+- **Markdown Parsing**: Add tools for extracting titles, table of contents, and structured sections
+- **Image Handling**: Enable LLM to process images/diagrams from documents
+
+### Document Processing Workflow
+- **Preprocessing Pipeline**: Define workflow for document ingestion and chunking
+- **Planning Prompts**: Update agent planning prompts for more effective retrieval workflows
+
+### Evaluation Framework
+- **Comprehensive Dataset**: Expand question set with more edge cases and multi-hop queries
+- **Planning Metrics**: Evaluate agent's planning capability for complex queries
+- **Improved Scoring**: Add metrics beyond correctness (relevance, completeness, citation accuracy)
+
+### Architecture
 1. **Re-ranking**: Add cross-encoder re-ranking for Hybrid RAG
-2. **Query classification**: Route queries to optimal agent
-3. **Timeout handling**: Add token/time limits for runaway prevention
+2. **Query Classification**: Route queries to optimal agent based on query type
+3. **Timeout Handling**: Add token/time limits for runaway prevention
 4. **Chunk optimization**: Experiment with different chunk sizes
 
 ---
