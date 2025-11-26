@@ -331,24 +331,15 @@ Both agents struggle with:
 ## Future Improvements
 
 ### Tool Enhancements
-- **MCP Integration**: Adopt latest MCPs built for terminal operations
-- **Markdown Parsing**: Add tools for extracting titles, table of contents, and structured sections
-- **Image Handling**: Enable LLM to process images/diagrams from documents
+- **MCP Integration**: Adopt latest MCPs built for terminal and markdown parsing - extracting titles, table of contents, structured sections, and enabling image processing for LLMs
 
-### Document Processing Workflow
-- **Preprocessing Pipeline**: Define workflow for document ingestion and chunking
+### Document Processing
+- **Nemoron Parser V1.1**: Process documents with accurate PDF/document to Markdown conversion, preserving format, sections, tables, formulas, images, and references
 - **Planning Prompts**: Update agent planning prompts for more effective retrieval workflows
 
 ### Evaluation Framework
-- **Comprehensive Dataset**: Expand question set with more edge cases and multi-hop queries
+- **Comprehensive Dataset**: Expand question set with more edge cases and diverse query types
 - **Planning Metrics**: Evaluate agent's planning capability for complex queries
-- **Improved Scoring**: Add metrics beyond correctness (relevance, completeness, citation accuracy)
-
-### Architecture
-1. **Re-ranking**: Add cross-encoder re-ranking for Hybrid RAG
-2. **Query Classification**: Route queries to optimal agent based on query type
-3. **Timeout Handling**: Add token/time limits for runaway prevention
-4. **Chunk optimization**: Experiment with different chunk sizes
 
 ---
 
