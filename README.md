@@ -70,14 +70,41 @@ Both agents use the same LLM (Qwen/Qwen3-235B), the same document corpus, and th
 | **Tokens (median)** | **12,137** | 37,294 | Hybrid 3.1x cheaper |
 | **Tool Calls (median)** | **2** | 6 | Hybrid 3x fewer |
 
+### Accuracy Comparison
+
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
-xychart-beta
-    title "Accuracy vs Efficiency Trade-off"
-    x-axis ["Hybrid RAG", "FileSearch"]
-    y-axis "Score (out of 5)" 3.5 --> 5
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#708090',
+    'secondaryColor': '#FA8072'
+  }
+}}%%
+xychart-beta horizontal
+    title "Average Correctness Score (out of 5)"
+    x-axis ["Hybrid RAG (Traditional)", "FileSearch (Agentic)"]
+    y-axis "Score" 0 --> 5
     bar [4.20, 4.67]
 ```
+
+<table>
+<tr>
+<td align="center" width="50%">
+
+**Hybrid RAG**
+`████████████████░░░░` **4.20/5**
+<br><sub>🔘 Steel Grey — Fast & Efficient</sub>
+
+</td>
+<td align="center" width="50%">
+
+**FileSearch (Agentic)**
+`███████████████████░` **4.67/5**
+<br><sub>🔴 Salmon — Accurate & Thorough</sub>
+
+</td>
+</tr>
+</table>
 
 ### The Interesting Part: Category Breakdown
 
