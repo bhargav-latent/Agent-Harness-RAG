@@ -76,8 +76,9 @@ Both agents use the same LLM (Qwen/Qwen3-235B), the same document corpus, and th
 %%{init: {
   'theme': 'base',
   'themeVariables': {
-    'primaryColor': '#708090',
-    'secondaryColor': '#FA8072'
+    'xyChart': {
+      'plotColorPalette': '#708090, #FA8072'
+    }
   }
 }}%%
 xychart-beta horizontal
