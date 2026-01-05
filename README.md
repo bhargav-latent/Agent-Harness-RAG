@@ -1,321 +1,10 @@
 # Agent-Harness-RAG
 
-> **A curious experiment: What happens when we give LLMs the keys to their own retrieval?**
+A comparative study of two RAG approaches: traditional hybrid retrieval (BM25 + vector search) versus agentic file search (LLM-controlled grep/glob/read tools). The experiment evaluates accuracy, latency, and token efficiency across 44 questions on a 3-document corpus.
 
 ---
 
-## The LLM World is Changing
-
-The world of Large Language Models is undergoing a fundamental transformation. We've moved from LLMs as **predictive models**—"What is the capital of France?"—to LLMs as **problem solvers**—"Figure out how to debug this distributed system."
-
-This shift is reflected in how we benchmark these systems:
-
-| Era | Benchmarks | What They Measure |
-|-----|-----------|-------------------|
-| **Then** | HumanEval, MathEval, MMLU | Knowledge retrieval, pattern matching |
-| **Now** | SWE-Bench, Tau-Bench, GAIA | Autonomous problem-solving, tool use, multi-step reasoning |
-
-The old paradigm of RAG (Retrieval-Augmented Generation) was simple: embed documents, find similar chunks, stuff them into context. But if LLMs can now *reason* and *plan*, why are we still hand-holding their retrieval?
-
-**What if we just... gave them the tools and let them figure it out?**
-
-This is where **Agent Harnesses** enter the picture. Think of it like giving Jarvis to Tony Stark—suddenly you're not just a genius in a workshop, you're Iron Man. The harness doesn't replace the intelligence; it *amplifies* it.
-
-LangChain's **Deep Agents** framework is one such harness. It wraps an LLM with planning capabilities (TodoListMiddleware) and filesystem tools (grep, glob, read_file), then lets the agent orchestrate its own retrieval strategy.
-
-**So we decided to take it for a spin.**
-
----
-
-## The Experiment
-
-We built two RAG agents and put them head-to-head:
-
-```mermaid
-flowchart LR
-    subgraph Traditional["Traditional RAG"]
-        Q1[Query] --> E[Embed]
-        E --> V[Vector Search]
-        V --> B[BM25 Search]
-        V & B --> M[Merge & Dedupe]
-        M --> L1[LLM Answers]
-    end
-
-    subgraph Agentic["Agentic RAG"]
-        Q2[Query] --> P[Agent Plans]
-        P --> T["Tools (grep/glob/read)"]
-        T --> I[Iterate & Refine]
-        I --> L2[LLM Answers]
-    end
-```
-
-| Agent | Approach | Philosophy |
-|-------|----------|------------|
-| **hybrid_rag_agent** | BM25 + Vector Search | "I know where to look" |
-| **filesearch_agent** | grep/glob/read_file tools | "Let me figure out where to look" |
-
-Both agents use the same LLM (Qwen/Qwen3-235B), the same document corpus, and the same LangGraph harness. The only difference is *how they retrieve information*.
-
----
-
-## Results Summary
-
-**44 questions. 11 categories. One winner (with caveats).**
-
-| Metric | Hybrid RAG | FileSearch (Agentic) | Verdict |
-|--------|-----------|---------------------|---------|
-| **Accuracy** | 4.20/5 | **4.67/5** | FileSearch +11% |
-| **Perfect Scores (5/5)** | 53% | **80%** | FileSearch +27% |
-| **Latency (median)** | **31s** | 58s | Hybrid 1.9x faster |
-| **Tokens (median)** | **12,137** | 37,294 | Hybrid 3.1x cheaper |
-| **Tool Calls (median)** | **2** | 6 | Hybrid 3x fewer |
-
-### Accuracy Comparison
-
-```mermaid
-%%{init: {
-  'theme': 'base',
-  'themeVariables': {
-    'primaryColor': '#708090',
-    'secondaryColor': '#FA8072'
-  }
-}}%%
-xychart-beta horizontal
-    title "Average Correctness Score (out of 5)"
-    x-axis ["Hybrid RAG (Traditional)", "FileSearch (Agentic)"]
-    y-axis "Score" 0 --> 5
-    bar [4.20, 4.67]
-```
-
-<table>
-<tr>
-<td align="center" width="50%">
-
-**Hybrid RAG**
-`████████████████░░░░` **4.20/5**
-<br><sub>🔘 Steel Grey — Fast & Efficient</sub>
-
-</td>
-<td align="center" width="50%">
-
-**FileSearch (Agentic)**
-`███████████████████░` **4.67/5**
-<br><sub>🔴 Salmon — Accurate & Thorough</sub>
-
-</td>
-</tr>
-</table>
-
-### The Interesting Part: Category Breakdown
-
-| Category | Hybrid | FileSearch | Winner |
-|----------|--------|------------|--------|
-| table_data | 3.8 | **5.0** | FileSearch |
-| semantic | 4.2 | **5.0** | FileSearch |
-| conceptual | 4.4 | **5.0** | FileSearch |
-| temporal | **4.7** | 4.0 | Hybrid |
-| negation | 3.3 | 3.7 | FileSearch |
-| contextual | 3.5 | 3.8 | FileSearch |
-
-**Key Findings:**
-
-1. **FileSearch dominates structured data** — Tables, formulas, semantic queries: the agent's ability to iteratively search and read specific sections pays off
-2. **Hybrid wins on temporal queries** — When you need "the 2014 WMT dataset," keyword matching just works
-3. **Both struggle with negation and context** — "What does this book NOT cover?" remains hard for everyone
-
----
-
-## The Deep Dive
-
-### What is an Agent Harness?
-
-An agent harness is infrastructure that transforms an LLM from a question-answering system into an autonomous agent. It provides:
-
-```mermaid
-flowchart TB
-    subgraph Harness["Agent Harness (Deep Agents)"]
-        LLM["LLM\n(Qwen 235B)"]
-
-        subgraph Middleware["Middleware Layer"]
-            TODO["TodoListMiddleware\n(Planning)"]
-            FS["FilesystemMiddleware\n(File Operations)"]
-        end
-
-        subgraph Backend["Backend"]
-            FSB["FilesystemBackend\n(Sandboxed Disk Access)"]
-        end
-
-        LLM <--> Middleware
-        Middleware <--> Backend
-    end
-
-    User([User Query]) --> LLM
-    Backend <--> Docs[(Document Corpus)]
-    LLM --> Answer([Answer])
-```
-
-The **FileSearch agent** uses this harness to:
-1. **Plan** the search strategy (write_todos)
-2. **Execute** iterative searches (grep → read_file → grep again)
-3. **Synthesize** answers from discovered content
-
-### Why Hybrid RAG Exists
-
-We didn't start with a fair fight. Our initial vector-only RAG was... broken.
-
-```
-Query: "attention mechanism"
-Vector Search Results: 1/5 relevant chunks (score: 0.27)
-BM25 Search Results:   5/5 relevant chunks
-
-Diagnosis: Embeddings pipeline producing low-quality similarity scores
-Solution:  BM25 compensates for vector weakness → Hybrid approach
-```
-
-The hybrid approach combines:
-- **BM25**: Perfect keyword matching (15 candidates)
-- **Vector**: Semantic similarity (15 candidates)
-- **Merge**: Deduplicate and return top-k
-
-This gives us a strong baseline that represents "traditional RAG done right."
-
-### Document Corpus
-
-Three documents covering different domains:
-
-| Document | Domain | Size |
-|----------|--------|------|
-| attention_is_all_you_need.md | ML Research | Transformer paper |
-| thinkpython2.md | Programming | Python textbook |
-| The Essence of Software Engineering.md | Software Engineering | SE principles |
-
-**Total:** 3,370 chunks (512 chars, 50 overlap) indexed in ChromaDB
-
-### Evaluation Methodology
-
-**44 questions** across 11 categories, designed to stress-test different retrieval scenarios:
-
-| Category | Count | What It Tests |
-|----------|-------|---------------|
-| exact_match | 5 | Finding specific terms, codes, identifiers |
-| semantic | 6 | Understanding meaning despite different wording |
-| table_data | 4 | Extracting from tables and structured data |
-| formulas | 4 | Retrieving equations and mathematical content |
-| multi_hop | 5 | Synthesizing info from multiple sources |
-| acronyms | 3 | Bridging technical shorthand |
-| contextual | 4 | Same word, different contexts |
-| negation | 3 | Understanding "not", "without" |
-| temporal | 3 | Time-based and version queries |
-| factual | 4 | Exact numbers, dates, names |
-| conceptual | 5 | High-level "why" and "how" questions |
-
-**Scoring:** LLM-as-judge (same model) rates each answer 1-5:
-- **5** = Perfect, complete, accurate
-- **4** = Mostly correct, minor omissions
-- **3** = Partially correct, missing key details
-- **2** = Mostly incorrect or incomplete
-- **1** = Wrong or irrelevant
-
----
-
-## Architecture Details
-
-### Hybrid RAG Agent
-
-```mermaid
-flowchart LR
-    Q[Query] --> BM25[BM25 Retriever\n15 candidates]
-    Q --> VS[Vector Store\nChromaDB + Qwen Embeddings\n15 candidates]
-    BM25 --> Merge[Merge & Deduplicate]
-    VS --> Merge
-    Merge --> TopK[Top K = 5]
-    TopK --> LLM[LLM generates answer]
-    LLM --> A[Answer with citations]
-```
-
-**Tools:** `hybrid_search`, `bm25_only_search`, `vector_only_search`
-
-### FileSearch RAG Agent
-
-```mermaid
-flowchart LR
-    Q[Query] --> Plan[Agent Plans\nwrite_todos]
-    Plan --> Search[Strategic Search\ngrep for keywords]
-    Search --> Read[Targeted Read\nread_file with line ranges]
-    Read --> More{Need more\ncontext?}
-    More -->|Yes| Search
-    More -->|No| Synth[Synthesize Answer]
-    Synth --> A[Answer with citations]
-```
-
-**Tools:** `grep`, `glob`, `read_file`, `ls`, `write_todos`, `read_todos`
-
----
-
-## Technology Stack
-
-| Component | Technology |
-|-----------|------------|
-| **LLM** | Qwen/Qwen3-235B-A22B-Instruct-2507-FP8 |
-| **Embeddings** | Qwen/Qwen3-Embedding-8B (4096 dims) |
-| **Agent Framework** | LangGraph + Deep Agents |
-| **Vector Store** | ChromaDB |
-| **BM25** | LangChain BM25Retriever |
-| **Chunking** | RecursiveCharacterTextSplitter (512 chars) |
-
----
-
-## Observations & Insights
-
-### Why FileSearch Wins on Accuracy
-
-The agentic approach shines when:
-
-1. **Information is scattered** — The agent can grep, find a lead, then read surrounding context
-2. **Tables need parsing** — Iterative reads let it find the right rows/columns
-3. **Semantic understanding is needed** — Multiple search attempts with refined queries
-
-### Why Hybrid Wins on Efficiency
-
-Pre-computed retrieval wins when:
-
-1. **Keywords are sufficient** — "dmodel = 512" just needs keyword matching
-2. **Context is predictable** — Similar questions have similar retrieval patterns
-3. **Cost matters** — 3x fewer tokens = 3x cheaper at scale
-
-### The Hard Problems
-
-Both agents struggle with:
-
-- **Negation**: "What is NOT mentioned?" requires knowing what's NOT there
-- **Contextual disambiguation**: "What does 'function' mean in Python vs. Transformers?"
-- **Cross-document reasoning**: Synthesizing insights across all three documents
-
-### Outliers & Edge Cases
-
-Two queries caused runaway behavior in FileSearch (excluded from stats):
-- **q037**: 9M tokens, 34 minutes (iterative search loop)
-- **q045**: 9M tokens, 14 minutes (exhaustive document scan)
-
-This highlights the risk of agentic approaches: without guardrails, agents can spiral.
-
----
-
-## When to Use What
-
-| Scenario | Recommended | Why |
-|----------|-------------|-----|
-| Production (cost-sensitive) | **Hybrid RAG** | 3x cheaper, predictable latency |
-| High accuracy required | **FileSearch** | +11% accuracy, better on complex queries |
-| Table/structured data | **FileSearch** | Iterative search finds exact rows |
-| Simple factual queries | **Hybrid RAG** | Keywords just work |
-| High throughput | **Hybrid RAG** | 2x faster, no agent planning overhead |
-
----
-
-## Running the Experiment
-
-### Quick Start
+## Quick Start
 
 ```bash
 # Install dependencies
@@ -344,6 +33,289 @@ EMBEDDINGS_BASE_URL=http://10.26.1.11:8786/v1
 
 ---
 
+## The Problem
+
+Traditional RAG uses a fixed retrieval pipeline: embed the query, search a vector store, return top-k chunks. This works well for simple queries but struggles when:
+
+- Information is scattered across multiple sections
+- Tables or structured data need precise extraction
+- The query requires iterative refinement to find relevant context
+
+The alternative: give the LLM direct access to search tools (grep, glob, read_file) and let it decide how to retrieve information. This is the "agentic RAG" approach.
+
+**Research question:** Does giving an LLM control over its own retrieval improve answer quality? At what cost?
+
+---
+
+## Architecture
+
+### Two Agents, Same Corpus
+
+Both agents use the same LLM (Qwen/Qwen3-235B), the same document corpus, and the same LangGraph harness. The only difference is retrieval strategy.
+
+| Agent | Retrieval Strategy | Tools |
+|-------|-------------------|-------|
+| **hybrid_rag_agent** | Pre-computed BM25 + vector search | `hybrid_search`, `bm25_only_search`, `vector_only_search` |
+| **filesearch_agent** | LLM-controlled file operations | `grep`, `glob`, `read_file`, `ls`, `write_todos`, `read_todos` |
+
+### Hybrid RAG Agent
+
+```
+Query → BM25 (15 candidates) ──┐
+                               ├→ Merge & Dedupe → Top 5 → LLM → Answer
+Query → Vector Search (15) ────┘
+```
+
+**How it works:**
+1. Query is sent to both BM25 and vector retrievers in parallel
+2. Each returns 15 candidate chunks
+3. Results are merged and deduplicated
+4. Top 5 chunks are passed to the LLM for answer generation
+
+**Why hybrid?** Our initial vector-only approach had poor recall:
+```
+Query: "attention mechanism"
+Vector Search: 1/5 relevant (similarity score: 0.27)
+BM25 Search:   5/5 relevant
+
+Diagnosis: Embeddings producing low-quality similarity scores
+Solution:  BM25 compensates for vector weakness
+```
+
+### FileSearch Agent (Agentic)
+
+```
+Query → Agent Plans (write_todos)
+          ↓
+        grep for keywords → read_file (line ranges)
+          ↓
+        Need more context? → grep again
+          ↓
+        Synthesize Answer
+```
+
+**How it works:**
+1. Agent receives query and plans a search strategy
+2. Uses `grep` to find files/lines containing relevant keywords
+3. Uses `read_file` with specific line ranges to get context
+4. Iterates: if answer is incomplete, searches again with refined queries
+5. Synthesizes final answer from discovered content
+
+**The harness:** LangGraph's Deep Agents framework provides:
+- **TodoListMiddleware**: Planning capabilities (write_todos, read_todos)
+- **FilesystemMiddleware**: Sandboxed file operations (grep, glob, read_file, ls)
+
+### Document Corpus
+
+| Document | Domain | Content |
+|----------|--------|---------|
+| attention_is_all_you_need.md | ML Research | Transformer paper |
+| thinkpython2.md | Programming | Python textbook |
+| The Essence of Software Engineering.md | Software Engineering | SE principles |
+
+**Indexing:** 3,370 chunks (512 chars, 50 char overlap) in ChromaDB with Qwen3-Embedding-8B (4096 dims)
+
+---
+
+## Evaluation Methodology
+
+### Dataset
+
+44 questions across 11 categories, designed to stress-test different retrieval scenarios:
+
+| Category | Count | What It Tests |
+|----------|-------|---------------|
+| exact_match | 5 | Finding specific terms, codes, identifiers |
+| semantic | 6 | Understanding meaning despite different wording |
+| table_data | 4 | Extracting from tables and structured data |
+| formulas | 4 | Retrieving equations and mathematical content |
+| multi_hop | 5 | Synthesizing info from multiple sources |
+| acronyms | 3 | Bridging technical shorthand |
+| contextual | 4 | Same word, different contexts |
+| negation | 3 | Understanding "not", "without" |
+| temporal | 3 | Time-based and version queries |
+| factual | 4 | Exact numbers, dates, names |
+| conceptual | 5 | High-level "why" and "how" questions |
+
+#### Example Questions
+
+**exact_match** (easy):
+```json
+{
+  "question": "What is the value of dmodel used in the Transformer architecture?",
+  "ground_truth": "The Transformer uses dmodel = 512 as the dimension for all sub-layers in the model, as well as the embedding layers."
+}
+```
+
+**table_data** (medium):
+```json
+{
+  "question": "Compare the computational complexity per layer between Self-Attention and Recurrent layers according to Table 1.",
+  "ground_truth": "Self-Attention has complexity O(n²·d) per layer, while Recurrent layers have complexity O(n·d²) per layer."
+}
+```
+
+**multi_hop** (hard):
+```json
+{
+  "question": "How does the Transformer achieve better parallelization than recurrent models, and what is the computational trade-off?",
+  "ground_truth": "Self-attention connects all positions with O(1) sequential operations vs O(n) for recurrent. Trade-off: O(n²·d) vs O(n·d²) complexity."
+}
+```
+
+**negation** (hard):
+```json
+{
+  "question": "What does the Transformer architecture NOT use, unlike previous state-of-the-art sequence models?",
+  "ground_truth": "The Transformer does NOT use recurrence or convolution. It relies entirely on attention mechanisms."
+}
+```
+
+### Scoring: LLM-as-Judge
+
+The same LLM (Qwen3-235B) evaluates answer correctness against ground truth.
+
+**Scoring rubric:**
+| Score | Meaning |
+|-------|---------|
+| 5 | FULLY CORRECT: Accurate, complete, matches or exceeds ground truth |
+| 4 | MOSTLY CORRECT: Factually correct with minor omissions |
+| 3 | PARTIALLY CORRECT: Some correct info but significant gaps |
+| 2 | MOSTLY WRONG: Major errors or misses the main point |
+| 1 | COMPLETELY WRONG: Incorrect, irrelevant, or contradicts ground truth |
+
+**Judge prompt:**
+```
+Evaluate the following RAG system answer against the ground truth.
+
+## Question
+{question}
+
+## Ground Truth Answer (Expected)
+{ground_truth}
+
+## System Answer (To Evaluate)
+{answer}
+
+## Important Notes
+- Focus on FACTUAL CORRECTNESS, not writing style
+- Partial credit is acceptable
+- The system answer doesn't need to be word-for-word identical
+- Consider semantic equivalence (same meaning = correct)
+
+Return: {"score": <1-5>, "explanation": "<reasoning>"}
+```
+
+**Judge parameters:** temperature=0.1 for consistent scoring
+
+### Limitations of This Methodology
+
+- **Same judge as answerer**: Using Qwen to judge Qwen's answers may introduce bias
+- **Small dataset**: 44 questions may not be statistically significant
+- **No confidence intervals**: Results are point estimates without error bars
+- **Single run**: No repeated trials to measure variance
+
+---
+
+## Results
+
+### Summary
+
+| Metric | Hybrid RAG | FileSearch | Difference |
+|--------|-----------|------------|------------|
+| **Accuracy (mean)** | 4.20/5 | **4.67/5** | +11% |
+| **Perfect scores (5/5)** | 53% | **80%** | +27pp |
+| **Latency (median)** | **31s** | 58s | 1.9x slower |
+| **Tokens (median)** | **12,137** | 37,294 | 3.1x more |
+| **Tool calls (median)** | **2** | 6 | 3x more |
+
+### Per-Category Breakdown
+
+| Category | Hybrid | FileSearch | Winner | Notes |
+|----------|--------|------------|--------|-------|
+| table_data | 3.8 | **5.0** | FileSearch | Agent iterates to find exact rows |
+| semantic | 4.2 | **5.0** | FileSearch | Multiple search attempts help |
+| conceptual | 4.4 | **5.0** | FileSearch | Can gather broader context |
+| temporal | **4.7** | 4.0 | Hybrid | Keywords like "2014 WMT" work well |
+| negation | 3.3 | 3.7 | FileSearch | Both struggle |
+| contextual | 3.5 | 3.8 | FileSearch | Both struggle |
+
+### Outliers
+
+Two queries caused runaway behavior in FileSearch (excluded from statistics):
+
+| Query | Tokens | Time | Behavior |
+|-------|--------|------|----------|
+| q037 | 9M | 34 min | Iterative search loop |
+| q045 | 9M | 14 min | Exhaustive document scan |
+
+This highlights a risk of agentic approaches: without guardrails, agents can spiral into expensive loops.
+
+---
+
+## Key Findings
+
+### When FileSearch Wins
+
+1. **Scattered information**: Can grep, find a lead, then read surrounding context
+2. **Tables and structured data**: Iterative reads find exact rows/columns
+3. **Semantic understanding needed**: Multiple search attempts with refined queries
+
+### When Hybrid Wins
+
+1. **Keyword-based queries**: "dmodel = 512" just needs keyword matching
+2. **Predictable retrieval**: Similar questions have similar patterns
+3. **Cost-sensitive scenarios**: 3x fewer tokens at scale
+
+### Shared Weaknesses
+
+- **Negation queries**: "What is NOT mentioned?" requires knowing what's absent
+- **Contextual disambiguation**: "What does 'function' mean in Python vs. Transformers?"
+- **Cross-document reasoning**: Neither agent effectively synthesizes across all three documents
+
+### Recommendation
+
+| Scenario | Recommended Agent |
+|----------|------------------|
+| Production (cost-sensitive) | Hybrid RAG |
+| High accuracy required | FileSearch |
+| Tables/structured data | FileSearch |
+| Simple factual queries | Hybrid RAG |
+| High throughput needed | Hybrid RAG |
+
+---
+
+## Limitations & Future Work
+
+### Current Limitations
+
+- **No guardrails on FileSearch**: Agent can spiral into expensive loops
+- **Small evaluation set**: 44 questions, especially few for negation/contextual
+- **Single LLM**: Results may not generalize to other models
+- **No statistical significance testing**: 4.20 vs 4.67 may be within noise
+- **Chunking not optimized**: 512 chars with 50 overlap was not tuned
+
+### Planned Improvements
+
+**Guardrails:**
+- Token/time limits to prevent runaway queries
+- Maximum iteration count for agent loops
+
+**Evaluation:**
+- Larger dataset (especially hard categories)
+- Multiple runs with different seeds
+- Planning quality metrics, not just final answer
+
+**Hybrid agent:**
+- Combine pre-computed retrieval with agentic refinement
+- Use fast retrieval first, escalate to agent when confidence is low
+
+**Document processing:**
+- Better PDF parsing to preserve tables and formulas
+- Semantic chunking vs. fixed-size
+
+---
+
 ## Repository Structure
 
 ```
@@ -366,49 +338,27 @@ Agent-Harness-RAG/
 
 ---
 
-## Future Directions
+## Technology Stack
 
-### Tool Enhancements
-- **MCP Integration**: Adopt Model Context Protocol tools for better terminal and markdown parsing
-- **Image Processing**: Enable LLMs to read diagrams and figures from documents
-
-### Document Processing
-- **Better PDF Parsing**: Preserve tables, formulas, and structure during conversion
-- **Chunk Optimization**: Experiment with semantic chunking vs. fixed-size
-
-### Evaluation
-- **Larger Dataset**: More questions, especially for hard categories (negation, contextual)
-- **Planning Metrics**: Measure agent's search strategy quality, not just final answer
-
-### Agent Improvements
-- **Guardrails**: Token/time limits to prevent runaway queries
-- **Caching**: Reuse search results across similar queries
-- **Hybrid Agent**: Combine pre-computed retrieval with agentic refinement
-
----
-
-## Conclusion
-
-**The agentic approach works.** Giving an LLM the tools to control its own retrieval produces measurably better answers—at least for complex queries involving structured data, semantic understanding, and multi-step reasoning.
-
-**But it's not free.** The 11% accuracy gain comes with 3x token cost and 2x latency. For high-volume production systems, hybrid RAG remains the pragmatic choice.
-
-The most exciting possibility? A **hybrid of hybrids**: use fast pre-computed retrieval for simple queries, escalate to agentic search when confidence is low. The best of both worlds.
-
-This was a curious experiment with interesting results. The LLM world really is changing, and agent harnesses like Deep Agents are just the beginning.
+| Component | Technology |
+|-----------|------------|
+| LLM | Qwen/Qwen3-235B-A22B-Instruct-2507-FP8 |
+| Embeddings | Qwen/Qwen3-Embedding-8B (4096 dims) |
+| Agent Framework | LangGraph + Deep Agents |
+| Vector Store | ChromaDB |
+| BM25 | LangChain BM25Retriever |
+| Chunking | RecursiveCharacterTextSplitter (512 chars) |
 
 ---
 
 ## Contributing
 
-We welcome contributions! Areas where you can help:
+Areas where contributions are welcome:
 
-- **Evaluation Dataset**: Add new test questions, especially for challenging categories
-- **Tool Development**: Build MCP tools for markdown parsing and document processing
-- **Agent Improvements**: Enhance planning prompts and retrieval strategies
-- **Documentation**: Improve guides and add examples
-
-Feel free to open issues or submit pull requests.
+- **Evaluation dataset**: Add test questions, especially for negation/contextual
+- **Guardrails**: Implement token/time limits for FileSearch agent
+- **Hybrid agent**: Combine pre-computed retrieval with agentic refinement
+- **Analysis**: Statistical significance testing, confidence intervals
 
 ---
 
